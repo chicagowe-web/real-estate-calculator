@@ -52,7 +52,7 @@ elif backend == "gemini":
         print("Get free API key at: https://aistudio.google.com/app/apikey")
         sys.exit(1)
     genai.configure(api_key=api_key)
-    client = genai.GenerativeModel("gemini-pro")
+    client = genai.GenerativeModel("gemini-1.5-flash")
 
 elif backend == "chatgpt":
     from openai import OpenAI

@@ -1,0 +1,119 @@
+# Qwen 14B Fine-Tuning Pipeline Configuration
+
+# Claude API (for data generation and evaluation)
+claude:
+  model: "claude-opus-5"
+  api_key: "${CLAUDE_API_KEY}"  # Set via environment variable
+  temperature: 0.7
+  max_tokens: 2000
+
+# Qwen Model Configuration
+qwen:
+  model_name: "Qwen/Qwen1.5-14B"
+  cache_dir: "./models"
+  device: "cuda"
+  dtype: "float16"  # Use float16 for efficiency
+
+# Fine-tuning Parameters
+training:
+  output_dir: "./outputs/qwen-14b-reasoner"
+  num_epochs: 3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 8
+  learning_rate: 2.0e-4
+  warmup_ratio: 0.05
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  logging_steps: 10
+  save_strategy: "epoch"
+  save_total_limit: 3
+  seed: 42
+
+# LoRA Configuration (for efficient fine-tuning)
+lora:
+  r: 16
+  lora_alpha: 32
+  target_modules:
+    - "q_proj"
+    - "v_proj"
+    - "k_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  lora_dropout: 0.05
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+# Data Generation Configuration
+data_generation:
+  domains:
+    - name: "devops_deployment"
+      count: 500
+      description: "Deployment planning, risk assessment, strategy selection"
+    - name: "fleet_management"
+      count: 500
+      description: "Fleet optimization, predictive maintenance, diagnostics coordination"
+    - name: "infrastructure_analysis"
+      count: 500
+      description: "Bottleneck detection, performance optimization, resource allocation"
+    - name: "complex_reasoning"
+      count: 500
+      description: "Multi-step reasoning, trade-off analysis, strategic decisions"
+
+  output_dir: "./data/generated"
+  format: "json"
+
+# Data Preparation Configuration
+data_preparation:
+  train_split: 0.9
+  val_split: 0.1
+  max_length: 1024
+  preprocessing:
+    - lowercase: false
+    - remove_special_tokens: false
+    - add_eos_token: true
+
+# Evaluation Configuration
+evaluation:
+  test_size: 100
+  metrics:
+    - "reasoning_quality"
+    - "accuracy"
+    - "confidence_calibration"
+    - "clarity"
+  confidence_threshold: 0.7
+  compare_to_claude: true
+
+# Integration Configuration
+integration:
+  ollama_port: 11434
+  ollama_model_name: "qwen-14b-reasoner"
+  hermes_config:
+    llm_backend: "ollama"
+    default_model: "qwen-14b-reasoner"
+
+# Logging and Monitoring
+logging:
+  level: "INFO"
+  log_dir: "./logs"
+  wandb:
+    enabled: true
+    project: "qwen-finetuning"
+    entity: "your-entity"  # Update this
+
+# Hardware Configuration
+hardware:
+  device: "cuda"
+  n_gpu: 1
+  mixed_precision: "fp16"  # For RTX 3080
+  gradient_checkpointing: true  # Saves memory
+
+# Paths
+paths:
+  base_dir: "./"
+  data_dir: "./data"
+  models_dir: "./models"
+  outputs_dir: "./outputs"
+  logs_dir: "./logs"
+  scenarios_dir: "./scenarios"

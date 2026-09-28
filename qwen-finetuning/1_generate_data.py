@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-Step 1: Generate Training Data using Claude
+Step 1: Generate Training Data using LLM
 
-This script uses Claude to generate high-quality training examples
-for fine-tuning Qwen 14B. Each example includes:
-- Original scenario/prompt
-- Chain-of-thought reasoning
-- Final answer/recommendation
-- Confidence score (0-100)
+Supports multiple LLM backends:
+- Claude (high quality, paid)
+- DeepSeek (free API)
+- Gemini (free $300 credits)
+- ChatGPT (cheap, paid)
 """
 
 import json
@@ -17,18 +16,57 @@ from pathlib import Path
 from typing import Dict, List
 import yaml
 from tqdm import tqdm
-from anthropic import Anthropic
 
 # Load configuration
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
-# Initialize Claude client
-client = Anthropic()
-api_key = os.getenv("CLAUDE_API_KEY")
-if not api_key:
-    print("❌ Error: CLAUDE_API_KEY environment variable not set")
+# Initialize LLM client based on config
+backend = config.get("llm", {}).get("backend", "deepseek").lower()
+
+if backend == "claude":
+    from anthropic import Anthropic
+    api_key = os.getenv("CLAUDE_API_KEY")
+    if not api_key:
+        print("Error: CLAUDE_API_KEY environment variable not set")
+        sys.exit(1)
+    client = Anthropic(api_key=api_key)
+
+elif backend == "deepseek":
+    from openai import OpenAI
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    if not api_key:
+        print("Error: DEEPSEEK_API_KEY environment variable not set")
+        print("Get free API key at: https://platform.deepseek.com/")
+        sys.exit(1)
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://api.deepseek.com"
+    )
+
+elif backend == "gemini":
+    import google.generativeai as genai
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        print("Error: GEMINI_API_KEY environment variable not set")
+        print("Get free API key at: https://aistudio.google.com/app/apikey")
+        sys.exit(1)
+    genai.configure(api_key=api_key)
+    client = genai.GenerativeModel("gemini-pro")
+
+elif backend == "chatgpt":
+    from openai import OpenAI
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("Error: OPENAI_API_KEY environment variable not set")
+        print("Get API key at: https://platform.openai.com/account/api-keys")
+        sys.exit(1)
+    client = OpenAI(api_key=api_key)
+else:
+    print(f"Error: Unknown backend '{backend}'")
     sys.exit(1)
+
+print(f"Using LLM backend: {backend.upper()}")
 
 # Create output directory
 output_dir = Path(config["data_generation"]["output_dir"])
@@ -192,23 +230,56 @@ def generate_domain_examples(domain: str, scenarios: List[str], count: int) -> L
         variation = variations[i % len(variations)]
         prompt = scenario + variation
 
-        # Get Claude's response
+        # Get response from LLM backend
         try:
-            message = client.messages.create(
-                model="claude-opus-5",
-                max_tokens=1500,
-                temperature=0.7,
-                system=DOMAIN_PROMPTS[domain]["system_prompt"],
-                messages=[
-                    {
-                        "role": "user",
-                        "content": f"Analyze this scenario:\n\n{prompt}"
-                    }
-                ]
-            )
+            if backend == "claude":
+                message = client.messages.create(
+                    model="claude-opus-5",
+                    max_tokens=1500,
+                    temperature=0.7,
+                    system=DOMAIN_PROMPTS[domain]["system_prompt"],
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": f"Analyze this scenario:\n\n{prompt}"
+                        }
+                    ]
+                )
+                response_text = message.content[0].text
+
+            elif backend in ["deepseek", "chatgpt"]:
+                message = client.chat.completions.create(
+                    model="deepseek-chat" if backend == "deepseek" else "gpt-3.5-turbo",
+                    max_tokens=1500,
+                    temperature=0.7,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": DOMAIN_PROMPTS[domain]["system_prompt"]
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Analyze this scenario:\n\n{prompt}"
+                        }
+                    ]
+                )
+                response_text = message.choices[0].message.content
+
+            elif backend == "gemini":
+                response = client.generate_content(
+                    f"""System: {DOMAIN_PROMPTS[domain]['system_prompt']}
+
+User: Analyze this scenario:
+
+{prompt}"""
+                )
+                response_text = response.text
+
+            else:
+                raise ValueError(f"Unknown backend: {backend}")
 
             # Parse response
-            response_text = message.content[0].text
+            response_text = response_text
 
             # Try to parse as JSON
             try:

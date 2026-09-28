@@ -1,11 +1,41 @@
 # Qwen 14B Fine-Tuning Pipeline Configuration
 
-# Claude API (for data generation and evaluation)
-claude:
-  model: "claude-opus-5"
-  api_key: "${CLAUDE_API_KEY}"  # Set via environment variable
-  temperature: 0.7
-  max_tokens: 2000
+# LLM Backend for Data Generation and Evaluation
+# Options: "claude", "deepseek", "gemini", "chatgpt"
+llm:
+  backend: "deepseek"  # Free option - no API key needed for basic usage
+
+  # Claude API (paid, but high quality)
+  claude:
+    model: "claude-opus-5"
+    api_key: "${CLAUDE_API_KEY}"
+    temperature: 0.7
+    max_tokens: 2000
+
+  # DeepSeek (FREE - recommended)
+  # Get free API key: https://platform.deepseek.com/
+  deepseek:
+    model: "deepseek-chat"
+    api_key: "${DEEPSEEK_API_KEY}"
+    base_url: "https://api.deepseek.com"
+    temperature: 0.7
+    max_tokens: 2000
+
+  # Google Gemini (FREE - $300 credits)
+  # Get free API key: https://aistudio.google.com/app/apikey
+  gemini:
+    model: "gemini-pro"
+    api_key: "${GEMINI_API_KEY}"
+    temperature: 0.7
+    max_tokens: 2000
+
+  # OpenAI ChatGPT (paid, cheaper than Claude)
+  # Get API key: https://platform.openai.com/account/api-keys
+  chatgpt:
+    model: "gpt-3.5-turbo"
+    api_key: "${OPENAI_API_KEY}"
+    temperature: 0.7
+    max_tokens: 2000
 
 # Qwen Model Configuration
 qwen:

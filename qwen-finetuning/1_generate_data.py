@@ -329,7 +329,7 @@ def main():
 
     print("🚀 Qwen 14B Fine-Tuning: Step 1 - Data Generation")
     print("=" * 60)
-    print(f"Claude API: {config['claude']['model']}")
+    print(f"LLM Backend: {backend.upper()}")
     print(f"Output directory: {output_dir}")
     print(f"Total examples to generate: {sum(d['count'] for d in config['data_generation']['domains'])}")
     print()

@@ -93,7 +93,9 @@ def load_model(model_path: str):
 
 def generate_response(model, tokenizer, prompt: str, max_length: int = 512) -> str:
     """Generate response from model."""
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    inputs = tokenizer(prompt, return_tensors="pt")
+    device = next(model.parameters()).device
+    inputs = inputs.to(device)
 
     with torch.no_grad():
         outputs = model.generate(
@@ -205,15 +207,20 @@ def main():
     print(f"  Gap: {92 - overall_avg:.1f} points")
 
     # Save report
+    # Calculate category scores
+    category_scores = {}
+    score_idx = 0
+    for cat in TEST_SCENARIOS.keys():
+        cat_size = len(TEST_SCENARIOS[cat])
+        cat_scores = all_scores[score_idx:score_idx + cat_size]
+        category_scores[cat] = sum(cat_scores) / len(cat_scores) if cat_scores else 0
+        score_idx += cat_size
+
     report = {
         "timestamp": str(Path(model_path).stat().st_mtime),
         "model_path": str(model_path),
         "overall_score": overall_avg,
-        "category_scores": {cat: sum(scores) / len(scores) for cat, scores in
-                          zip(TEST_SCENARIOS.keys(),
-                              [all_scores[i:i+len(TEST_SCENARIOS[cat])]
-                               for cat in TEST_SCENARIOS.keys()
-                               for _ in TEST_SCENARIOS[cat]])},
+        "category_scores": category_scores,
         "detailed_scores": all_scores,
     }
 

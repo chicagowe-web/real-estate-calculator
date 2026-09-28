@@ -114,8 +114,12 @@ def setup_model_and_tokenizer():
 
 def setup_training_args():
     """Configure training arguments."""
+    output_dir = config["training"]["output_dir"]
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    Path("./logs").mkdir(parents=True, exist_ok=True)
+
     training_args = TrainingArguments(
-        output_dir=config["training"]["output_dir"],
+        output_dir=output_dir,
         num_train_epochs=config["training"]["num_epochs"],
         per_device_train_batch_size=config["training"]["per_device_train_batch_size"],
         per_device_eval_batch_size=config["training"]["per_device_eval_batch_size"],
@@ -128,7 +132,7 @@ def setup_training_args():
         seed=config["training"]["seed"],
         fp16=True,  # Use mixed precision
         logging_dir="./logs",
-        report_to="wandb" if config["logging"]["wandb"]["enabled"] else [],
+        report_to=["wandb"] if config["logging"].get("wandb", {}).get("enabled", False) else [],
         run_name=f"qwen-14b-reasoner-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
     )
 

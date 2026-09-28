@@ -120,12 +120,11 @@ def prepare_data():
             examples["text"],
             truncation=True,
             max_length=config["data_preparation"]["max_length"],
-            padding="max_length",
-            return_tensors="pt"
+            padding="max_length"
         )
 
         # For causal language modeling, labels = input_ids
-        tokenized["labels"] = tokenized["input_ids"].clone()
+        tokenized["labels"] = tokenized["input_ids"]
 
         return tokenized
 
